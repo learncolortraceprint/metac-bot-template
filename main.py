@@ -1,6 +1,7 @@
 import argparse
 import asyncio
 import logging
+import os
 from datetime import datetime, timezone
 from typing import Literal
 
@@ -218,10 +219,14 @@ class FallTemplateBot2026(ForecastBot):
             Before answering you write:
             (a) The time left until the outcome to the question is known.
             (b) The status quo outcome if nothing changed.
-            (c) A brief description of a scenario that results in a No outcome.
-            (d) A brief description of a scenario that results in a Yes outcome.
+            (c) A reference class and its base rate: how often have similar events happened in similar time windows?
+            (d) A brief description of a scenario that results in a No outcome.
+            (e) A brief description of a scenario that results in a Yes outcome.
+            (f) The strongest evidence in the research that should move you away from the base rate, and how far.
+            (g) Check the exact resolution criteria and fine print for technicalities that could flip the outcome.
 
             You write your rationale remembering that good forecasters put extra weight on the status quo outcome since the world changes slowly most of the time.
+            Think like a calibrated superforecaster: start from the base rate, adjust in small steps for evidence, and avoid going below 3% or above 97% unless the outcome is nearly certain from the research.
             {self._get_conditional_disclaimer_if_necessary(question)}
 
             The last thing you write is your final answer as: "Probability: ZZ%", 0-100
@@ -701,7 +706,15 @@ if __name__ == "__main__":
     run_mode: Literal["tournament", "metaculus_cup", "test_questions"] = args.mode
 
     check_environment(strict=True)
-    publish_to_metaculus = True
+    # LearnColorTracePrint settings: set BOT_DRY_RUN=1 to test without posting.
+    publish_to_metaculus = os.getenv("BOT_DRY_RUN", "0") != "1"
+    # Claude via OpenRouter by default; override with BOT_MODEL / BOT_RESEARCHER.
+    BOT_MODEL = os.getenv("BOT_MODEL", "openrouter/anthropic/claude-sonnet-4.5")
+    BOT_RESEARCHER = os.getenv(
+        "BOT_RESEARCHER",
+        "asknews/news-summaries" if os.getenv("ASKNEWS_SECRET") else "openrouter/perplexity/sonar-pro",
+    )
+    BOT_PARSER = os.getenv("BOT_PARSER", "openrouter/anthropic/claude-haiku-4.5")
     print_startup_banner(run_mode, will_publish=publish_to_metaculus)
 
     # Configure the bot. The `llms=` block below is commented out to use
@@ -715,17 +728,21 @@ if __name__ == "__main__":
         folder_to_save_reports_to=None,
         skip_previously_forecasted_questions=True,
         extra_metadata_in_explanation=True,
-        # llms={
-        #     "default": GeneralLlm(
-        #         model="openrouter/openai/gpt-4o",
-        #         temperature=0.3,
-        #         timeout=40,
-        #         allowed_tries=2,
-        #     ),
-        #     "summarizer": "openai/gpt-4o-mini",
-        #     "researcher": "asknews/news-summaries",
-        #     "parser": "openai/gpt-4o-mini",
-        # },
+        llms={
+            "default": GeneralLlm(
+                model=BOT_MODEL,
+                temperature=0.3,
+                timeout=120,
+                allowed_tries=2,
+            ),
+            "summarizer": BOT_PARSER,
+            "researcher": (
+                BOT_RESEARCHER
+                if BOT_RESEARCHER.startswith(("asknews/", "smart-searcher", "no_research"))
+                else GeneralLlm(model=BOT_RESEARCHER, temperature=0.1, timeout=120)
+            ),
+            "parser": BOT_PARSER,
+        },
     )
 
     # Per-mode tournament URL shown in the summary banner footer. These
