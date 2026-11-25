@@ -294,6 +294,8 @@ class FallTemplateBot2026(ForecastBot):
             (a) The time left until the outcome to the question is known.
             (b) The status quo outcome if nothing changed.
             (c) A description of a scenario that results in an unexpected outcome.
+            (d) Base rates or historical frequencies for each option, where available.
+            (e) The strongest evidence in the research for and against the leading options.
 
             {self._get_conditional_disclaimer_if_necessary(question)}
             You write your rationale remembering that (1) good forecasters put extra weight on the status quo outcome since the world changes slowly most of the time, and (2) good forecasters leave some moderate probability on most options to account for unexpected outcomes.
@@ -386,6 +388,7 @@ class FallTemplateBot2026(ForecastBot):
 
             {self._get_conditional_disclaimer_if_necessary(question)}
             You remind yourself that good forecasters are humble and set wide 90/10 confidence intervals to account for unknown unknowns.
+            Anchor on historical data or a reference class first, then adjust for current trends and the research.
 
             The last thing you write is your final answer as:
             "
@@ -481,6 +484,7 @@ class FallTemplateBot2026(ForecastBot):
 
             {self._get_conditional_disclaimer_if_necessary(question)}
             You remind yourself that good forecasters are humble and set wide 90/10 confidence intervals to account for unknown unknowns.
+            Anchor on historical data or a reference class first, then adjust for current trends and the research.
 
             The last thing you write is your final answer as:
             "
